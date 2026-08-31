@@ -1,7 +1,0 @@
-This is a new go project in latest go 1.27.0.
-This is a transparent proxy service for openai api calls.
-The proxy should forward all user textual inputs (prompts, text files) to a presidio-analyzer endpoint via POST /analyze. See api-docs.yml.
-If sensitive information is found the sensitive plain text part should be replaced by it's age encrypted cipher with pkg.go.dev/filippo.io/age and forwarded to the upstream LLM API (default: https://openrouter.ai/api/v1).
-All replacements should be logged together with presidio's `analysis_explanation`.
-All upstream responses must be parsed for age ciphers and if it finds any, they must be decrypted and presented in plain text to the client the response is destined.
-If parsing for age ciphers is difficult or not 100% doable. The age cipher should be prefixed with a string, making it 100% identifiable in the response.

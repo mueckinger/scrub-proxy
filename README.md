@@ -7,6 +7,11 @@ and restores it in responses: secrets are redacted one-way via
 [Presidio-Analyzer](https://github.com/data-privacy-stack/presidio) and restored
 from placeholders before returning to the client.
 
+Scrub Proxy is built for **multilingual LLM traffic**: it handles calls in
+different languages (e.g. German and English) within the same conversation,
+detects the language of every message, and analyzes it with a **multilingual
+Presidio instance** that has the matching NLP engines (`de`, `en`, …) loaded.
+
 ## How it works
 
 1. **Scrub requests**: The proxy extracts all user textual inputs from the
@@ -27,6 +32,32 @@ from placeholders before returning to the client.
 The `placeholder → plaintext` mapping lives only in memory for the lifetime of
 a single request and is never persisted or logged. The upstream LLM never sees
 the PII — only the placeholder. Redacted secrets are never seen by anyone.
+
+## Multilingual PII detection (de & en)
+
+Scrub Proxy is designed for **multilingual LLM calls**: a conversation can mix
+languages freely (e.g. German and English), and every extracted user text is
+handled in its own language:
+
+1. [Lingua](https://github.com/pemistahl/lingua-go) detects the language of each
+   message, restricted to the ISO 639-1 codes configured in `ANALYZER_LANGUAGES`
+   (default: `en,de`).
+2. The detected language is passed to Presidio `POST /analyze`, so a
+   **multilingual Presidio instance** (with the `de` and `en` NLP engines
+   loaded) applies its language-specific recognizers — German names, addresses,
+   and ID numbers as well as English SSNs, phone numbers, etc.
+3. Placeholders are language-independent (`<Name_1>`, `<EMAIL_ADDRESS_2>`), so
+   restoration in responses works identically for every language.
+
+Example: the German message *"Mein Name ist Max Mustermann, ich wohne in
+Berlin"* is analyzed with the `de` engine, while an English message in the same
+request is analyzed with the `en` engine — both within a single LLM call.
+
+> Make sure the Presidio analyzer you point `PRESIDIO_ANALYZER_URL` at is
+> deployed as a multilingual instance with the NLP models for all languages
+> listed in `ANALYZER_LANGUAGES` (see the
+> [Presidio documentation](https://microsoft.github.io/presidio/) on supporting
+> additional languages).
 
 ## Why placeholders instead of encryption?
 
@@ -87,6 +118,119 @@ go run .
 
 # Point any OpenAI-compatible client at the proxy
 export OPENAI_BASE_URL=http://localhost:8080/v1
+```
+
+## Docker
+
+The image is published on GHCR: `ghcr.io/mueckinger/scrub-proxy`.
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e PRESIDIO_ANALYZER_URL=http://presidio-analyzer:3000 \
+  -e UPSTREAM_BASE_URL=https://openrouter.ai/api/v1 \
+  -e ANALYZER_LANGUAGES=en,de \
+  ghcr.io/mueckinger/scrub-proxy:latest
+```
+
+A complete local setup with a multilingual Presidio analyzer (`de` + `en`):
+
+```bash
+docker network create scrub
+
+# Presidio analyzer — must include the NLP models for all languages listed in
+# ANALYZER_LANGUAGES (see the Presidio docs on supporting additional languages)
+docker run -d --name presidio-analyzer --network scrub -p 3000:3000 \
+  ghcr.io/data-privacy-stack/presidio-analyzer:latest
+
+# Scrub Proxy
+docker run --rm --network scrub -p 8080:8080 \
+  -e PRESIDIO_ANALYZER_URL=http://presidio-analyzer:3000 \
+  -e UPSTREAM_BASE_URL=https://openrouter.ai/api/v1 \
+  -e ANALYZER_LANGUAGES=en,de \
+  ghcr.io/mueckinger/scrub-proxy:latest
+```
+
+Point any OpenAI-compatible client at the proxy:
+
+```bash
+export OPENAI_BASE_URL=http://localhost:8080/v1
+```
+
+## Kubernetes
+
+Deployment and Service manifest (`scrub-proxy.yaml`). It assumes a multilingual
+Presidio analyzer (with `de` and `en` NLP engines) is reachable as the service
+`presidio-analyzer` on port `3000` — e.g. deployed via the
+[Presidio Helm chart](https://github.com/data-privacy-stack/presidio) or a
+custom image with the required language models:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scrub-proxy
+  labels:
+    app: scrub-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scrub-proxy
+  template:
+    metadata:
+      labels:
+        app: scrub-proxy
+    spec:
+      containers:
+        - name: scrub-proxy
+          image: ghcr.io/mueckinger/scrub-proxy:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PRESIDIO_ANALYZER_URL
+              value: http://presidio-analyzer:3000
+            - name: UPSTREAM_BASE_URL
+              value: https://openrouter.ai/api/v1
+            - name: ANALYZER_LANGUAGES
+              value: en,de
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scrub-proxy
+  labels:
+    app: scrub-proxy
+spec:
+  type: ClusterIP
+  selector:
+    app: scrub-proxy
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+```
+
+```bash
+kubectl apply -f scrub-proxy.yaml
 ```
 
 ## Logging
