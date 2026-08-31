@@ -1,0 +1,137 @@
+Third-Party Licenses
+====================
+
+This project uses the following third-party open-source dependencies. Their
+licenses are acknowledged below, organized by license type. This file is
+maintained to satisfy the notice-preservation obligations of the MPL-2.0 and
+Apache-2.0 licenses, and to document the permissive licenses of the remaining
+dependencies.
+
+The dependency list is derived from `go.mod`. Direct dependencies are listed
+first; indirect (transitive) dependencies follow.
+
+----------------------------------------------------------------------------
+MIT License
+----------------------------------------------------------------------------
+
+The MIT License requires that the copyright notice and permission notice be
+included in all copies or substantial portions of the software.
+
+Direct:
+  - github.com/spf13/viper
+  - github.com/zricethezav/gitleaks/v8
+
+Indirect:
+  - github.com/BobuSumisu/aho-corasick
+  - github.com/Masterminds/goutils
+  - github.com/Masterminds/semver/v3
+  - github.com/Masterminds/sprig/v3
+  - github.com/STARRY-S/zip
+  - github.com/andybalholm/brotli
+  - github.com/aymanbagabas/go-osc52/v2
+  - github.com/bodgit/plumbing
+  - github.com/bodgit/sevenzip
+  - github.com/bodgit/windows
+  - github.com/charmbracelet/lipgloss
+  - github.com/dsnet/compress
+  - github.com/fatih/semgroup
+  - github.com/fsnotify/fsnotify
+  - github.com/gitleaks/go-gitdiff
+  - github.com/google/uuid
+  - github.com/h2non/filetype
+  - github.com/huandu/xstrings
+  - github.com/klauspost/compress
+  - github.com/klauspost/pgzip
+  - github.com/lucasb-eyer/go-colorful
+  - github.com/magiconair/properties
+  - github.com/mattn/go-colorable
+  - github.com/mattn/go-isatty
+  - github.com/mattn/go-runewidth
+  - github.com/mholt/archives
+  - github.com/mitchellh/copystructure
+  - github.com/mitchellh/mapstructure
+  - github.com/mitchellh/reflectwalk
+  - github.com/muesli/reflow
+  - github.com/muesli/termenv
+  - github.com/nwaples/rardecode/v2
+  - github.com/pelletier/go-toml/v2
+  - github.com/pierrec/lz4/v4
+  - github.com/rivo/uniseg
+  - github.com/rs/zerolog
+  - github.com/sagikazarmark/locafero
+  - github.com/sagikazarmark/slog-shim
+  - github.com/shopspring/decimal
+  - github.com/sorairolake/lzip-go
+  - github.com/sourcegraph/conc
+  - github.com/spf13/afero
+  - github.com/spf13/cast
+  - github.com/spf13/pflag
+  - github.com/subosito/gotenv
+  - github.com/tetratelabs/wazero
+  - github.com/therootcompany/xz
+  - github.com/ulikunitz/xz
+  - github.com/wasilibs/go-re2
+  - github.com/wasilibs/wazero-helpers
+  - go.uber.org/multierr
+  - go4.org
+
+----------------------------------------------------------------------------
+Apache License 2.0
+----------------------------------------------------------------------------
+
+The Apache License 2.0 requires that a copy of the license and any NOTICE
+files be included in redistributions. See:
+https://www.apache.org/licenses/LICENSE-2.0
+
+Direct:
+  - github.com/pemistahl/lingua-go
+
+Indirect:
+  - github.com/minio/minlz
+  - golang.org/x/crypto
+  - golang.org/x/exp
+  - golang.org/x/sync
+  - golang.org/x/sys
+  - golang.org/x/text
+  - google.golang.org/protobuf
+
+----------------------------------------------------------------------------
+Mozilla Public License 2.0 (weak copyleft, file-level)
+----------------------------------------------------------------------------
+
+The MPL-2.0 is a file-level copyleft license. If you modify the covered
+files, those modified files must remain under MPL-2.0. It does not require
+the entire project to be open source. See:
+https://www.mozilla.org/en-US/MPL/2.0/
+
+Indirect:
+  - github.com/hashicorp/errwrap
+  - github.com/hashicorp/go-multierror
+  - github.com/hashicorp/go-version
+  - github.com/hashicorp/golang-lru/v2
+  - github.com/hashicorp/hcl
+
+----------------------------------------------------------------------------
+BSD-3-Clause License
+----------------------------------------------------------------------------
+
+The BSD-3-Clause license requires that the copyright notice, list of
+conditions, and disclaimer be retained in redistributions.
+
+Indirect:
+  - dario.cat/mergo
+  - gopkg.in/ini.v1
+  - gopkg.in/yaml.v3
+
+----------------------------------------------------------------------------
+Notes
+----------------------------------------------------------------------------
+
+- The license attribution above is based on the declared license of each
+  package at the version referenced in `go.mod`. Always verify the license
+  of a dependency before redistributing it.
+- For MPL-2.0 and Apache-2.0 dependencies, the corresponding license text
+  and any NOTICE files are distributed alongside the dependency itself and
+  must be preserved.
+- This file does not replace the project's own LICENSE file; it documents
+  the third-party licenses only.
