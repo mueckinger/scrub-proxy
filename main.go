@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -17,6 +18,12 @@ import (
 	proxy "scrub-proxy/proxy"
 	"scrub-proxy/secrets"
 )
+
+// defaultGitleaksConfig embeds the vendored default rule set so the binary
+// works without an external config file (e.g. in the container image).
+//
+//go:embed gitleaks.toml
+var defaultGitleaksConfig []byte
 
 func main() {
 	cfg := LoadConfig()
@@ -38,7 +45,7 @@ func main() {
 	// secret redaction stage is skipped.
 	var scanner proxy.SecretScanner
 	if cfg.SecretScanEnabled {
-		gs, err := secrets.NewGitleaksScanner(cfg.GitleaksConfig)
+		gs, err := secrets.NewScanner(cfg.GitleaksConfig, defaultGitleaksConfig)
 		if err != nil {
 			logger.Error("failed to build gitleaks scanner", "error", err)
 			os.Exit(1)

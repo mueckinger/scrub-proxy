@@ -2,8 +2,9 @@
 
 A transparent Go reverse proxy for OpenAI-compatible LLM APIs (default upstream:
 [OpenRouter](https://openrouter.ai)) that scrubs sensitive data out of requests
-and restores it in responses: secrets are redacted one-way via
-[gitleaks](https://github.com/gitleaks/gitleaks), PII is anonymized via
+and restores it in responses: secrets are redacted one-way using a
+[gitleaks](https://github.com/gitleaks/gitleaks)-compatible rule set (gitleaks
+TOML, stdlib regexp engine), PII is anonymized via
 [Presidio-Analyzer](https://github.com/data-privacy-stack/presidio) and restored
 from placeholders before returning to the client.
 
@@ -19,9 +20,9 @@ Presidio instance** that has the matching NLP engines (`de`, `en`, …) loaded.
    of each text with [Lingua](https://github.com/pemistahl/lingua-go) (restricted
    to the codes in `ANALYZER_LANGUAGES`), sends each to Presidio `POST /analyze`
    with the detected language, and replaces every detected PII span with a
-   **bounded placeholder** like `<Name_1>`. Before that, a gitleaks scan
-   redacts anything that looks like an API key, token, or credential — those
-   are never restorable.
+   **bounded placeholder** like `<Name_1>`. Before that, a secret scan
+   (gitleaks-compatible rules) redacts anything that looks like an API key,
+   token, or credential — those are never restorable.
 2. **Forward**: The scrubbed request is forwarded to the upstream LLM API.
    The client's `Authorization` header is passed through unchanged.
 3. **Restore responses**: The proxy scans upstream responses for placeholders
@@ -97,8 +98,8 @@ Configuration is via environment variables (see `config.example.env`):
 | `UPSTREAM_LOG` | `false` | Log outgoing upstream HTTP traffic (`true`/`false`) |
 | `LOG_LEVEL` | `info` | Log level: `debug`, `info`, `warn`, `error` |
 | `ANALYZER_LANGUAGES` | `en,de` | Comma-separated ISO 639-1 codes the language detector may choose from |
-| `SECRET_SCAN_ENABLED` | `true` | Enable the gitleaks secret redaction stage |
-| `GITLEAKS_CONFIG` | *(empty)* | Path to a custom gitleaks TOML config |
+| `SECRET_SCAN_ENABLED` | `true` | Enable the secret redaction stage |
+| `GITLEAKS_CONFIG` | *(empty)* | Path to a custom secret-scanner TOML config (gitleaks format); when empty, the embedded default rules are used |
 | `MAX_REQUEST_BODY_BYTES` | `10485760` | Maximum accepted request body size (10 MiB) |
 
 The proxy does **not** configure an upstream API key — it forwards the client's
@@ -274,7 +275,7 @@ streamable_tool_call_arguments type=response.function_call_arguments.delta raw=.
 
 ## Security notes
 
-- **Secrets are redacted one-way**: gitleaks findings are replaced with
+- **Secrets are redacted one-way**: secret findings are replaced with
   `[REDACTED]` before any further processing; the value is discarded and never
   restorable or logged.
 - **Request bodies are size-capped** (`MAX_REQUEST_BODY_BYTES`) because they
@@ -313,8 +314,9 @@ streamable_tool_call_arguments type=response.function_call_arguments.delta raw=.
 │   ├── streamable.go         # streamableHttp restorer
 │   └── holdback.go           # bounded hold-back restorer
 └── secrets/
-    ├── scanner.go            # gitleaks wrapper
-    ├── finding.go            # finding model + offset conversion
+    ├── scanner.go            # gitleaks-config-based secret scanner (stdlib regexp)
+    ├── entropy.go            # Shannon entropy gate
+    ├── finding.go            # finding model
     └── redact.go             # one-way redaction
 ```
 
